@@ -33,3 +33,20 @@ Building the software:
 There is a Windows PC project for visual studio 2010. Multiplatform support is pending.
 
 The FX2LP device software needs the Keil PK51 toolchain.  It is a very simple firmware that implements i2c protocol and can be commanded via USB. There is a compiled binary i2c.iic you can upload to the FX2LP device as well.
+
+This fork:
+
+Was created to use native i2c bus, available on raspberry pi. For the moment it is added python realization which is identical to original protrammer, written in C++. You need just 3 wires attached to raspberry pi
+
+Connect:
+```
+    Raspberry   VGA Port
+    Pi          Target
+    ------      ---------------
+    J8-3    ---> Pin 15 DDC SCL
+    J8-5    ---> Pin 12 DDC SDA
+    J8-6    ---> GND (choose any of the white ports, not the VGA connector itself)
+```
+
+You need to enable i2c interface in raspi-config (if not yet) and then reboot.
+Also you need to install smbus module for python (since programmer uses smbus to talk over i2c).
