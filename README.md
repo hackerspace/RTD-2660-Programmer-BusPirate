@@ -34,7 +34,7 @@ There is a Windows PC project for visual studio 2010. Multiplatform support is p
 
 The FX2LP device software needs the Keil PK51 toolchain.  It is a very simple firmware that implements i2c protocol and can be commanded via USB. There is a compiled binary i2c.iic you can upload to the FX2LP device as well.
 
-This fork:
+##Python fork of the programmer
 
 Was created to use native i2c bus, available on raspberry pi. For the moment it is added python realization which is identical to original protrammer, written in C++. You need just 3 wires attached to raspberry pi
 
