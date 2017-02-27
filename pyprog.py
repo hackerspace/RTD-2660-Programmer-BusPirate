@@ -68,8 +68,11 @@ def FindChip (jedec_id):
             return Flash
     return None
 
+def GetManufacturedId ( jedec_id ):
+    return jedec_id >> 16
+
 def GetManufacturerName ( jedec_id ):
-    id = jedec_id>>16
+    id = GetManufacturedId ( jedec_id )
     if id==0x20:
         return "ST"
     elif id==0xef:
@@ -82,6 +85,23 @@ def GetManufacturerName ( jedec_id ):
         return "Microchip"
 
     return "Unknown"
+
+
+def SetupChipCommands ( jedec_id, pr ):
+    id = GetManufacturedId ( jedec_id )
+    if id==0xef:
+        print "Setup chip commands for Winbond..."
+        # These are the codes for Winbond
+        pr.WriteReg ( 0x62, 0x6 )  #// Flash Write enable op code
+        pr.WriteReg ( 0x63, 0x50 ) #// Flash Write register op code
+        pr.WriteReg ( 0x6a, 0x3 )  #// Flash Read op code.
+        pr.WriteReg ( 0x6b, 0xb )  #// Flash Fast read op code.
+        pr.WriteReg ( 0x6d, 0x2 )  #// Flash program op code.
+        pr.WriteReg ( 0x6e, 0x5 )  #// Flash read status op code.
+    else:
+        print "Can not handle manufacturer code %02x\n" % id
+        sys.exit ( -6 )
+
 
 class CRC():
     """Computes CRC in the memory"""
@@ -269,7 +289,6 @@ class SPI():
 
         return self.b.ReadReg (0x75)
 
-
 def SaveFlash (filename, chip_size, spi):
     fdump = open(filename,"wb")
     crc = CRC()
@@ -450,6 +469,9 @@ def main():
         print "Manufacturer %s " % GetManufacturerName(jedec_id)
         print "Chip: %s" % chip[0]
         print "Size: %dKB" % chip[2]
+
+        # Setup flash command codes
+        SetupChipCommands (jedec_id,pr)
 
         b = spir.SPICommonCommand(E_CC_READ, 0x5, 1, 0, 0)
 
