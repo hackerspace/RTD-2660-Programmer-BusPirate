@@ -36,16 +36,16 @@ The FX2LP device software needs the Keil PK51 toolchain.  It is a very simple fi
 
 ##Python fork of the programmer
 
-Was created to use native i2c bus, available on raspberry pi. For the moment it is added python realization which is identical to original protrammer, written in C++. You need just 3 wires attached to raspberry pi
+Was created to use native i2c bus, available on raspberry pi. For the moment it is added python realization which is identical to original programmer, written in C++. You need just 3 wires attached to raspberry pi
 
 Connect:
 ```
     Raspberry   VGA Port
     Pi          Target
     ------      ---------------
-    J8-3    ---> Pin 15 DDC SCL
-    J8-5    ---> Pin 12 DDC SDA
-    J8-6    ---> GND (choose any of the white ports, not the VGA connector itself)
+    J8-3    ---> Pin 15 DDC SCL (or pin 11 of white row connector)
+    J8-5    ---> Pin 12 DDC SDA (or pin 12 of white row connector)
+    J8-6    ---> GND (choose any of the white ports, not the VGA connector itself) (or pin 10 of white row connector)
 ```
 
 You need to enable i2c interface in raspi-config (if not yet) and then reboot.
