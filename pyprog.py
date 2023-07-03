@@ -90,7 +90,7 @@ def GetManufacturerName ( jedec_id ):
 def SetupChipCommands ( jedec_id, pr ):
     id = GetManufacturedId ( jedec_id )
     if id==0xef:
-        print "Setup chip commands for Winbond..."
+        print("Setup chip commands for Winbond...")
         # These are the codes for Winbond
         pr.WriteReg ( 0x62, 0x6 )  #// Flash Write enable op code
         pr.WriteReg ( 0x63, 0x50 ) #// Flash Write register op code
@@ -99,7 +99,7 @@ def SetupChipCommands ( jedec_id, pr ):
         pr.WriteReg ( 0x6d, 0x2 )  #// Flash program op code.
         pr.WriteReg ( 0x6e, 0x5 )  #// Flash read status op code.
     else:
-        print "Can not handle manufacturer code %02x\n" % id
+        print("Can not handle manufacturer code %02x\n" % id)
         sys.exit ( -6 )
 
 
@@ -112,7 +112,7 @@ class CRC():
     def ProcessCRC (self, data):
         for byte in data:
             self.gCrc ^= byte<<8
-            for i in xrange(8):
+            for i in range(8):
                 if self.gCrc & 0x8000:
                     self.gCrc ^= 0x1070<<3
                 self.gCrc <<= 1
@@ -129,7 +129,7 @@ class BitStream():
         self.datalen = len(data)
 
     def HasData(self):
-        return self.mask<>0 or self.datalen<>0
+        return (not self.mask == 0) or (not self.datalen == 0)
 
     def DataSize(self):
         return self.datalen
@@ -298,17 +298,15 @@ def SaveFlash (filename, chip_size, spi):
         sys.stdout.write("Reading %d of %d\r" % (addr, chip_size))
         sys.stdout.flush()
         buf = spi.SPIRead (addr, 1024)
-        str = ''.join(chr(i) for i in buf)
-
-        fdump.write(str)
+        fdump.write(bytes(buf))
         crc.ProcessCRC(buf)
         addr += 1024
 
     fdump.close()
     data_crc = crc.GetCRC()
-    print ""
-    print "Received data CRC %x" % data_crc
-    print "Chip CRC %x" % chip_crc
+    print("")
+    print("Received data CRC %x" % data_crc)
+    print("Chip CRC %x" % chip_crc)
     return data_crc==chip_crc
 
 
@@ -346,14 +344,14 @@ def DecodeGff(data):
 def ReadFile (filename):
     fsize = os.stat(filename).st_size
     if fsize > 8*1024*1024:
-        print "This file looks too big %d" % fsize
+        print("This file looks too big %d" % fsize)
         return None
     with open (filename, "rb") as fl:
         content = fl.read()
     if content[0:12]=="GMI GFF V1.0":
-        print "Detected GFF image"
+        print("Detected GFF image")
         if fsize<256:
-            print "This file looks too small %d" % fsize
+            print("This file looks too small %d" % fsize)
             return None
         reslt, out = DecodeGff(content[256:])
         if reslt:
@@ -366,25 +364,25 @@ def ReadFile (filename):
 def ShouldProgramPage (buff):
     chff = chr(0xff)
     for ch in buff:
-        if ch<>chff:
+        if not ch == chff:
             return True
     return False
 
 
 def EraseFlash(pr):
     spi = SPI(pr)
-    print "Erasing..."
+    print("Erasing...")
     spi.SPICommonCommand(E_CC_WRITE_AFTER_EWSR, 1, 0, 1, 0)  # Unprotect the Status Register
     spi.SPICommonCommand(E_CC_WRITE_AFTER_WREN, 1, 0, 1, 0)  # Unprotect the flash
     spi.SPICommonCommand(E_CC_ERASE, 0xc7, 0, 0, 0)  # Chip Erase Erase
-    print "done"
+    print("done")
 
 def ProgramFlash (filename, chip_size, pr):
     prog = ReadFile(filename)
     if not prog:
         return False
 
-    print "Will write %dKb" % (len(prog)/1024)
+    print("Will write %dKb" % (len(prog)/1024))
     spi = SPI(pr)
     addr = 0
     data_len = len(prog)
@@ -402,8 +400,8 @@ def ProgramFlash (filename, chip_size, pr):
         if lng>data_len:
             lng = data_len
         buff = []
-        for i in xrange (lng):
-            buff.append (ord(prog[data_ptr+i]))
+        for i in range (lng):
+            buff.append (prog[data_ptr+i])
 
         data_ptr += lng
         data_len -= lng
@@ -441,9 +439,9 @@ def ProgramFlash (filename, chip_size, pr):
     spi.SPICommonCommand(E_CC_WRITE_AFTER_WREN, 1, 0, 1, 0x1c)  # Protect the flash
     data_crc = crc.GetCRC()
     chip_crc = spi.SPIComputeCRC ( 0, addr-1 )
-    print ""
-    print "Received data CRC %x" % data_crc
-    print "Chip CRC %x" % chip_crc
+    print("")
+    print("Received data CRC %x" % data_crc)
+    print("Chip CRC %x" % chip_crc)
     return data_crc == chip_crc
 
 
@@ -453,32 +451,32 @@ def main():
         pr.WriteReg(0x6f, 0x80)
         res = pr.ReadReg(0x6f)
         if res & 0x80 == 0:
-            print "Can't enable ISP mode"
+            print("Can't enable ISP mode")
             sys.exit(-1)
 
         spir = SPI(pr)
         jedec_id = spir.SPICommonCommand(E_CC_READ, 0x9f, 3, 0, 0)
-        print "JEDEC ID: 0x%x" % jedec_id
+        print("JEDEC ID: 0x%x" % jedec_id)
 
         chip = FindChip(jedec_id)
         if not chip:
-            print "Inknown chip ID"
+            print("Inknown chip ID")
             sys.exit(-1)
 
         chipsize = chip[2] * 1024
-        print "Manufacturer %s " % GetManufacturerName(jedec_id)
-        print "Chip: %s" % chip[0]
-        print "Size: %dKB" % chip[2]
+        print("Manufacturer %s " % GetManufacturerName(jedec_id))
+        print("Chip: %s" % chip[0])
+        print("Size: %dKB" % chip[2])
 
         # Setup flash command codes
         SetupChipCommands (jedec_id,pr)
 
         b = spir.SPICommonCommand(E_CC_READ, 0x5, 1, 0, 0)
 
-        print  "Flash status register: 0x%x" % (b)
+        print("Flash status register: 0x%x" % (b))
         opts, args = getopt.getopt(sys.argv[1:], 'r:w:e', ['save=','flash=','erase'])
     except getopt.GetoptError:
-        print USAGE
+        print(USAGE)
         sys.exit(2)
 
     save = False
@@ -498,14 +496,14 @@ def main():
             erase = True
 
     if save:
-        print "Save dump to %s" % ofile
+        print("Save dump to %s" % ofile)
         SaveFlash(ofile, chipsize, spir)
 
     if erase:
         EraseFlash(pr)
 
     if write:
-        print "Flashing %s" % infile
+        print("Flashing %s" % infile)
         ProgramFlash(infile, chipsize, pr)
 
 
