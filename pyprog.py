@@ -264,7 +264,7 @@ class SPI():
 
         data = []
         while length>0:
-            read_len = len
+            read_len = length
             if read_len>64:
                 read_len=64
             data += self.b.ReadBytesFromAddr ( 0x70, read_len)
