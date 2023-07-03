@@ -61,6 +61,8 @@ def FindChip (jedec_id):
 	, #Microchip
     (  "SST25VF512", 0xBF4800, 64      , 256, 32)
 	, ("SST25VF032", 0xBF4A00, 4 * 1024, 256, 32)
+	, #PUYA
+	(  "P25Q40"    , 0x856013, 512     , 256, 64)
 	, (           0, 0   , 0       , 0  , 0)
     )
     for Flash in FlashDevices:
@@ -83,13 +85,15 @@ def GetManufacturerName ( jedec_id ):
         return "Macronix"
     elif id==0xbf:
         return "Microchip"
+    elif id==0x85:
+        return "PUYA"
 
     return "Unknown"
 
 
 def SetupChipCommands ( jedec_id, pr ):
     id = GetManufacturedId ( jedec_id )
-    if id==0xef:
+    if id==0xef or id==0x85:
         print("Setup chip commands for Winbond...")
         # These are the codes for Winbond
         pr.WriteReg ( 0x62, 0x6 )  #// Flash Write enable op code
