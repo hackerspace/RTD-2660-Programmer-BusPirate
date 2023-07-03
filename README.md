@@ -34,7 +34,7 @@ There is a Windows PC project for visual studio 2010. Multiplatform support is p
 
 The FX2LP device software needs the Keil PK51 toolchain.  It is a very simple firmware that implements i2c protocol and can be commanded via USB. There is a compiled binary i2c.iic you can upload to the FX2LP device as well.
 
-##Python fork of the programmer
+##Python version, with native I2C backend
 
 Was created to use native i2c bus, available on raspberry pi. For the moment it is added python realization which is identical to original programmer, written in C++. You need just 3 wires attached to raspberry pi
 
@@ -50,3 +50,9 @@ Connect:
 
 You need to enable i2c interface in raspi-config (if not yet) and then reboot.
 Also you need to install smbus module for python (since programmer uses smbus to talk over i2c).
+
+##Python version, using BusPirate
+
+The Python version now supports BusPirate.
+
+Requires [pyBusPirateLite](https://github.com/juhasch/pyBusPirateLite) to be installed, but other than that no other configuration is necessary.

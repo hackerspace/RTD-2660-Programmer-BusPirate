@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import smbus
 import time
 import os
 import sys
@@ -188,10 +187,11 @@ class Nibble(BitStream):
                 return 6 if self.ReadBit() else 0xff
         return 0xff
 
-class rtd():
+class rtd_smbus():
     """speaks over i2c with RTD2660"""
 
     def __init__(self, bus, addr):
+        import smbus
         self.addr = addr
         self.b = smbus.SMBus(bus)
 
@@ -215,6 +215,33 @@ class rtd():
 
     def ReadReg (self, reg):
         return self.b.read_byte_data(self.addr, reg)
+
+
+class rtd_buspirate():
+    """speaks over i2c with RTD2660"""
+
+    def __init__(self, addr):
+        from pyBusPirateLite.pyBusPirateLite import I2Chigh
+        self.addr = addr
+        self.b = I2Chigh()
+        self.b.speed = '400kHz'
+
+    def ReadReg (self, reg):
+        f = self.b.write_then_read(2,0, [self.addr << 1, reg])
+        f = self.b.write_then_read(1,1, [(self.addr << 1) | 1])
+        return f[0]
+
+    def WriteReg ( self, reg, data ):
+        self.b.write_then_read(3,0, [self.addr << 1, reg, data & 0xff])
+
+    def ReadBytesFromAddr (self, reg, length):
+        if length>32:
+            length=32
+        self.b.write_then_read(2,0, [self.addr << 1, reg])
+        return self.b.write_then_read(1,length, [(self.addr << 1) | 1])
+
+    def WriteBytesToAddr (self, reg, data):
+        self.b.write_then_read(2 + len(data), 0, [self.addr << 1, reg] + data)
 
 class SPI():
     """SPI interface over i2c"""
@@ -449,7 +476,7 @@ def ProgramFlash (filename, chip_size, pr):
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'r:w:e', ['save=','flash=','erase'])
+        opts, args = getopt.getopt(sys.argv[1:], 'r:w:eb:', ['save=','flash=','erase','backend='])
     except getopt.GetoptError:
         print(USAGE)
         sys.exit(2)
@@ -459,6 +486,7 @@ def main():
     erase = False
     infile = ""
     ofile = ""
+    backend = None
     for o, a in opts:
         if o in ('-r', '--save'):
             save = True
@@ -469,8 +497,25 @@ def main():
             infile = a
         elif o in ('-e', '--erase'):
             erase = True
+        elif o in ('-b','--backend'):
+            backend = a
 
-    pr = rtd(1, 0x4a)
+    if backend is None:
+        try:
+            pr = rtd_smbus(1, 0x4a)
+            print("Using SMBUS backend (--backend=smbus)")
+        except:
+            print("Can't use SMBUS backend (use --backend=smbus to force it anyway), attempting BusPirate...")
+            pr = rtd_buspirate(0x4a)
+            print("Using BusPirate backend (assuming --backend=buspirate)")
+    elif backend == "smbus":
+        pr = rtd_smbus(1, 0x4a)
+    elif backend == "buspirate":
+        pr = rtd_buspirate(0x4a)
+    else:
+        print("Unknown backend: %s" % backend)
+        sys.exit(-1)
+
     pr.WriteReg(0x6f, 0x80)
     res = pr.ReadReg(0x6f)
     if res & 0x80 == 0:
