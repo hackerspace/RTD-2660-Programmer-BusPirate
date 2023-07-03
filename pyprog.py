@@ -202,6 +202,8 @@ class rtd():
         return self.b.read_byte_data(self.addr, reg)
 
     def ReadBytesFromAddr (self, reg, length):
+        if length>64:
+            length=64
         self.b.write_byte_data(self.addr, reg, length)
         data = []
         for x in range(length):
@@ -267,12 +269,8 @@ class SPI():
             continue
 
         data = []
-        while length>0:
-            read_len = length
-            if read_len>64:
-                read_len=64
-            data += self.b.ReadBytesFromAddr ( 0x70, read_len)
-            length -= read_len
+        while len(data) < length:
+            data += self.b.ReadBytesFromAddr ( 0x70, length - len(data))
 
         return data
 
@@ -451,33 +449,6 @@ def ProgramFlash (filename, chip_size, pr):
 
 def main():
     try:
-        pr = rtd(1, 0x4a)
-        pr.WriteReg(0x6f, 0x80)
-        res = pr.ReadReg(0x6f)
-        if res & 0x80 == 0:
-            print("Can't enable ISP mode")
-            sys.exit(-1)
-
-        spir = SPI(pr)
-        jedec_id = spir.SPICommonCommand(E_CC_READ, 0x9f, 3, 0, 0)
-        print("JEDEC ID: 0x%x" % jedec_id)
-
-        chip = FindChip(jedec_id)
-        if not chip:
-            print("Inknown chip ID")
-            sys.exit(-1)
-
-        chipsize = chip[2] * 1024
-        print("Manufacturer %s " % GetManufacturerName(jedec_id))
-        print("Chip: %s" % chip[0])
-        print("Size: %dKB" % chip[2])
-
-        # Setup flash command codes
-        SetupChipCommands (jedec_id,pr)
-
-        b = spir.SPICommonCommand(E_CC_READ, 0x5, 1, 0, 0)
-
-        print("Flash status register: 0x%x" % (b))
         opts, args = getopt.getopt(sys.argv[1:], 'r:w:e', ['save=','flash=','erase'])
     except getopt.GetoptError:
         print(USAGE)
@@ -498,6 +469,34 @@ def main():
             infile = a
         elif o in ('-e', '--erase'):
             erase = True
+
+    pr = rtd(1, 0x4a)
+    pr.WriteReg(0x6f, 0x80)
+    res = pr.ReadReg(0x6f)
+    if res & 0x80 == 0:
+        print("Can't enable ISP mode")
+        sys.exit(-1)
+
+    spir = SPI(pr)
+    jedec_id = spir.SPICommonCommand(E_CC_READ, 0x9f, 3, 0, 0)
+    print("JEDEC ID: 0x%x" % jedec_id)
+
+    chip = FindChip(jedec_id)
+    if not chip:
+        print("Inknown chip ID")
+        sys.exit(-1)
+
+    chipsize = chip[2] * 1024
+    print("Manufacturer %s " % GetManufacturerName(jedec_id))
+    print("Chip: %s" % chip[0])
+    print("Size: %dKB" % chip[2])
+
+    # Setup flash command codes
+    SetupChipCommands (jedec_id,pr)
+
+    b = spir.SPICommonCommand(E_CC_READ, 0x5, 1, 0, 0)
+
+    print("Flash status register: 0x%x" % (b))
 
     if save:
         print("Save dump to %s" % ofile)
